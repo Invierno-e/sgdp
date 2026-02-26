@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Dotación 2026 - Minimal Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #ffffff; color: #1e293b; }
+        .card { @apply bg-white p-8 rounded-2xl border border-slate-100 shadow-sm transition-all duration-300; }
+        .card:hover { @apply shadow-md border-slate-200; }
+        .stat-value { @apply text-4xl font-extrabold tracking-tight text-slate-900; }
+        .stat-label { @apply text-[11px] text-slate-400 uppercase font-bold tracking-[0.15em] mb-1 block; }
+        .chart-container { position: relative; height: 260px; width: 100%; }
+        .glass-header { @apply bg-white/90 backdrop-blur-md border-b border-slate-100 sticky top-0 z-50; }
+        select, input { @apply transition-all duration-200 border border-slate-200 hover:border-indigo-300 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/5; }
+    </style>
+</head>
+<body class="antialiased">
+
+    <header class="glass-header">
+        <div class="max-w-7xl mx-auto px-6 py-6 flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div class="flex items-center gap-4">
+                <div class="bg-slate-900 p-2.5 rounded-xl text-white">
+                    <i data-lucide="bar-chart-big" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold text-slate-900 leading-tight">Dotación Subdirección de Gestión y Desarrollo de Personas 2026</h1>
+                    <div class="flex items-center gap-2 mt-0.5">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                        <p class="text-[11px] text-slate-500 uppercase font-bold tracking-wider">Dashboard de caracterización | Fecha corte: 25/02/2026</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex flex-wrap items-center gap-3">
+                <div class="relative">
+                    <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                    <input type="text" id="searchInput" placeholder="Nombre o profesión..." 
+                           class="pl-10 pr-4 py-2.5 bg-white rounded-xl text-sm outline-none w-64"
+                           oninput="updateDashboard()">
+                </div>
+                <select id="filterArea" class="bg-white text-sm rounded-xl px-4 py-2.5 outline-none min-w-[180px]" onchange="updateDashboard()">
+                    <option value="All">Todas las Áreas</option>
+                </select>
+                <button onclick="resetFilters()" class="bg-slate-50 text-slate-400 p-2.5 rounded-xl hover:bg-slate-100 hover:text-indigo-600 transition-all" title="Reiniciar filtros">
+                    <i data-lucide="rotate-ccw" class="w-5 h-5"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-6 py-10">
+        
+        <!-- KPIs Row -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-10">
+            <div class="card !border-t-2 !border-t-indigo-500">
+                <span class="stat-label">Dotación Real</span>
+                <p class="stat-value" id="kpiTotal">0</p>
+                <p class="text-xs text-slate-400 mt-2 flex items-center gap-1"><i data-lucide="users" class="w-3 h-3"></i> Personas</p>
+            </div>
+            <div class="card !border-t-2 !border-t-slate-200">
+                <span class="stat-label">Edad Promedio</span>
+                <p class="stat-value" id="kpiEdad">0</p>
+                <p class="text-xs text-slate-400 mt-2 flex items-center gap-1"><i data-lucide="calendar" class="w-3 h-3"></i> Años promedio</p>
+            </div>
+            <div class="card !border-t-2 !border-t-slate-200">
+                <span class="stat-label">Grado Medio</span>
+                <p class="stat-value" id="kpiGrado">0</p>
+                <p class="text-xs text-slate-400 mt-2 flex items-center gap-1"><i data-lucide="award" class="w-3 h-3"></i> Nivel de responsabilidad</p>
+            </div>
+            <div class="card !border-t-2 !border-t-indigo-500">
+                <span class="stat-label">Antigüedad SC</span>
+                <p class="stat-value" id="kpiAntiguedad">0</p>
+                <p class="text-xs text-slate-400 mt-2 flex items-center gap-1"><i data-lucide="clock" class="w-3 h-3"></i> Años de permanencia</p>
+            </div>
+        </div>
+
+        <!-- Charts Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-10">
+            <div class="card">
+                <div class="flex items-center justify-between mb-8">
+                    <h3 class="text-xs uppercase font-black tracking-widest text-slate-400">Distribución Género</h3>
+                    <span id="genderSummary" class="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-md"></span>
+                </div>
+                <div class="chart-container">
+                    <canvas id="chartGenero"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3 class="text-xs uppercase font-black tracking-widest text-slate-400 mb-8">Composición Estamentos</h3>
+                <div class="chart-container">
+                    <canvas id="chartEstamento"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3 class="text-xs uppercase font-black tracking-widest text-slate-400 mb-8">Profesiones Principales</h3>
+                <div class="chart-container">
+                    <canvas id="chartProfesion"></canvas>
+                </div>
+            </div>
+            
+            <div class="card lg:col-span-3">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-10">
+                    <div>
+                        <h3 class="text-xs uppercase font-black tracking-widest text-slate-400">Matriz de Seniority y Grado</h3>
+                        <p class="text-sm text-slate-500 mt-1">Pasa el cursor sobre los círculos para ver información detallada (fuente aumentada para legibilidad).</p>
+                    </div>
+                    <div class="flex items-center gap-6 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                        <div class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-indigo-500/40 border border-indigo-500"></span> Mujer</div>
+                        <div class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-slate-900/40 border border-slate-900"></span> Hombre</div>
+                    </div>
+                </div>
+                <div class="chart-container" style="height: 380px;">
+                    <canvas id="chartScatter"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Table -->
+        <div class="card !p-0 overflow-hidden border-slate-100">
+            <div class="px-8 py-6 border-b border-slate-50 flex items-center justify-between bg-slate-50/30">
+                <h3 class="text-xs uppercase font-black tracking-widest text-slate-400">Nómina Detallada 2026</h3>
+                <span id="rowCount" class="text-[10px] font-black text-slate-400 border border-slate-200 px-3 py-1 rounded-full uppercase"></span>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm text-left border-collapse">
+                    <thead>
+                        <tr class="text-slate-400 font-bold uppercase text-[10px] tracking-widest border-b border-slate-50">
+                            <th class="px-8 py-5">Nombre Colaborador</th>
+                            <th class="px-6 py-5">Área de Gestión</th>
+                            <th class="px-6 py-5">Calidad Jurídica</th>
+                            <th class="px-6 py-5 text-center">Grado</th>
+                            <th class="px-6 py-5">Profesión</th>
+                            <th class="px-8 py-5 text-center">Antigüedad SC</th>
+                        </tr>
+                    </thead>
+                    <tbody id="dataTableBody" class="divide-y divide-slate-50">
+                        <!-- Renderizado por JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <footer class="max-w-7xl mx-auto px-6 py-12 flex flex-col md:flex-row justify-between items-center gap-4 text-slate-400">
+        <p class="text-[11px] uppercase font-bold tracking-widest">© 2026 Servicio Civil - Gestión de Personas</p>
+        <div class="flex items-center gap-6 text-[10px] font-black uppercase tracking-[0.2em]">
+            <span class="text-indigo-600 font-bold">CONFIDENCIAL</span>
+            <span>REPORTE DOTACIÓN 2026</span>
+        </div>
+    </footer>
+
+    <script>
+        // CONFIGURACIÓN GLOBAL PARA TOOLTIPS EXTRA LEGIBLES
+        Chart.defaults.plugins.tooltip.backgroundColor = 'rgba(15, 23, 42, 1)'; 
+        Chart.defaults.plugins.tooltip.titleFont = { size: 18, weight: '800', family: "'Inter', sans-serif" };
+        Chart.defaults.plugins.tooltip.bodyFont = { size: 15, weight: '400', family: "'Inter', sans-serif" };
+        Chart.defaults.plugins.tooltip.padding = 18;
+        Chart.defaults.plugins.tooltip.cornerRadius = 12;
+        Chart.defaults.plugins.tooltip.displayColors = true;
+        Chart.defaults.plugins.tooltip.borderColor = 'rgba(99, 102, 241, 0.4)';
+        Chart.defaults.plugins.tooltip.borderWidth = 1;
+
+        // DATOS UNIFICADOS (34 Registros Únicos - Actualizados y sin duplicados)
+        const RAW_DATA = [
+          { "Nombre": "Pérez Arteaga Lorena", "AREA": "Subdirectora", "Calidad Jurídica": "Planta", "Estamento": "Directivo", "Grado": 2.0, "Profesión": "Trabajador Social", "Ingreso Servicio Civil": "2004-07-15", "Antigüedad Servicio Civil": 21.7, "Edad": 56.5, "Sexo": "M" },
+          { "Nombre": "Valdivieso Fernández Cristóbal", "AREA": "Fortalecimiento", "Calidad Jurídica": "Contrata", "Estamento": "Profesional", "Grado": 4.0, "Profesión": "Psicólogo", "Ingreso Servicio Civil": "2012-11-26", "Antigüedad Servicio Civil": 13.2, "Edad": 44.9, "Sexo": "H" },
+          { "Nombre": "Belmar Flores Fernando Alejandro", "AREA": "Empleo Público", "Calidad Jurídica": "Planta", "Estamento": "Profesional", "Grado": 5.0, "Profesión": "Ingeniero Civil Industrial", "Ingreso Servicio Civil": "2004-10-07", "Antigüedad Servicio Civil": 21.4, "Edad": 53.4, "Sexo": "H" },
+          { "Nombre": "Cerda Díaz Delia Ninoscka", "AREA": "Empleo Público", "Calidad Jurídica": "Contrata", "Estamento": "Profesional", "Grado": 5.0, "Profesión": "Trabajador Social", "Ingreso Servicio Civil": "2004-08-11", "Antigüedad Servicio Civil": 21.6, "Edad": 55.7, "Sexo": "M" },
+          { "Nombre": "Marchant Guzmán Hugo Eduardo", "AREA": "CAMPUS", "Calidad Jurídica": "Contrata", "Estamento": "Profesional", "Grado": 5.0, "Profesión": "Trabajador Social", "Ingreso Servicio Civil": "2005-07-15", "Antigüedad Servicio Civil": 20.7, "Edad": 53.7, "Sexo": "H" },
+          { "Nombre": "Uribe Toledo Matías Raúl", "AREA": "CAMPUS", "Calidad Jurídica": "Contrata", "Estamento": "Profesional", "Grado": 5.0, "Profesión": "Psicólogo", "Ingreso Servicio Civil": "2007-12-01", "Antigüedad Servicio Civil": 18.2, "Edad": 48.4, "Sexo": "H" },
+          { "Nombre": "Vega Solís Carlos Patricio", "AREA": "Fortalecimiento", "Calidad Jurídica": "Planta", "Estamento": "Profesional", "Grado": 5.0, "Profesión": "Ingeniero Comercial", "Ingreso Servicio Civil": "2006-03-01", "Antigüedad Servicio Civil": 19.1, "Edad": 54.4, "Sexo": "H" },
+          { "Nombre": "Campos Tapia Patricia Elena", "AREA": "Empleo Público", "Calidad Jurídica": "Planta", "Estamento": "Profesional", "Grado": 6.0, "Profesión": "Ingeniero Civil Industrial", "Ingreso Servicio Civil": "2004-06-21", "Antigüedad Servicio Civil": 21.8, "Edad": 52.2, "Sexo": "M" },
+          { "Nombre": "Carvajal Aravena María Elisa", "AREA": "Empleo Público", "Calidad Jurídica": "Planta", "Estamento": "Profesional", "Grado": 6.0, "Profesión": "Ingeniero Comercial", "Ingreso Servicio Civil": "2004-02-16", "Antigüedad Servicio Civil": 22.0, "Edad": 70.7, "Sexo": "M" },
+          { "Nombre": "Suárez Medina Priscilla Andrea", "AREA": "Fortalecimiento", "Calidad Jurídica": "Contrata", "Estamento": "Profesional", "Grado": 6.0, "Profesión": "Administrador Público", "Ingreso Servicio Civil": "2005-08-16", "Antigüedad Servicio Civil": 20.6, "Edad": 50.7, "Sexo": "M" },
+          { "Nombre": "Vargas Yáñez Valeria Del Carmen", "AREA": "Fortalecimiento", "Calidad Jurídica": "Contrata", "Estamento": "Profesional", "Grado": 6.0, "Profesión": "Psicólogo", "Ingreso Servicio Civil": "2021-07-01", "Antigüedad Servicio Civil": 4.7, "Edad": 49.0, "Sexo": "M" },
+          { "Nombre": "Meneses Herrera Margarita Beatriz", "AREA": "Fortalecimiento", "Calidad Jurídica": "Contrata", "Estamento": "Profesional", "Grado": 7.0, "Profesión": "Administrador Público", "Ingreso Servicio Civil": "2005-12-01", "Antigüedad Servicio Civil": 20.2, "Edad": 46.8, "Sexo": "M" },
+          { "Nombre": "Montero Ruiz Marcela Alejandra", "AREA": "Fortalecimiento", "Calidad Jurídica": "Contrata", "Estamento": "Profesional", "Grado": 7.0, "Profesión": "Psicólogo", "Ingreso Servicio Civil": "2007-11-19", "Antigüedad Servicio Civil": 18.3, "Edad": 50.3, "Sexo": "M" },
+          { "Nombre": "Céspedes Olavarría Mirtha", "AREA": "Fortalecimiento", "Calidad Jurídica": "Contrata", "Estamento": "Profesional", "Grado": 8.0, "Profesión": "Trabajador Social", "Ingreso Servicio Civil": "2017-05-01", "Antigüedad Servicio Civil": 8.9, "Edad": 51.0, "Sexo": "M" },
+          { "Nombre": "Jiménez Sandoval Karen Andrea", "AREA": "Empleo Público", "Calidad Jurídica": "Contrata", "Estamento": "Profesional", "Grado": 8.0, "Profesión": "Psicólogo", "Ingreso Servicio Civil": "2012-04-02", "Antigüedad Servicio Civil": 13.1, "Edad": 48.6, "Sexo": "M" },
+          { "Nombre": "Labra Madariaga José Manuel", "AREA": "Empleo Público", "Calidad Jurídica": "Contrata", "Estamento": "Profesional", "Grado": 8.0, "Profesión": "Trabajador Social", "Ingreso Servicio Civil": "2007-01-02", "Antigüedad Servicio Civil": 19.1, "Edad": 60.9, "Sexo": "H" },
+          { "Nombre": "Meier Rivadeneira Alberto Pablo", "AREA": "Empleo Público", "Calidad Jurídica": "Contrata", "Estamento": "Profesional", "Grado": 8.0, "Profesión": "Psicólogo", "Ingreso Servicio Civil": "2016-01-01", "Antigüedad Servicio Civil": 10.1, "Edad": 49.2, "Sexo": "H" },
+          { "Nombre": "Peñailillo Núñez María Gabriela", "AREA": "Fortalecimiento", "Calidad Jurídica": "Contrata", "Estamento": "Profesional", "Grado": 8.0, "Profesión": "Trabajador Social", "Ingreso Servicio Civil": "2017-05-01", "Antigüedad Servicio Civil": 8.9, "Edad": 50.4, "Sexo": "M" },
+          { "Nombre": "Ruiz Vásquez Pablo Andrés", "AREA": "Empleo Público", "Calidad Jurídica": "Contrata", "Estamento": "Profesional", "Grado": 8.0, "Profesión": "Psicólogo", "Ingreso Servicio Civil": "2013-11-18", "Antigüedad Servicio Civil": 12.3, "Edad": 42.2, "Sexo": "H" },
+          { "Nombre": "Triviño Guerrero Daniel Patricio", "AREA": "CAMPUS", "Calidad Jurídica": "Contrata", "Estamento": "Profesional", "Grado": 8.0, "Profesión": "Administrador Público", "Ingreso Servicio Civil": "2007-06-01", "Antigüedad Servicio Civil": 18.8, "Edad": 42.2, "Sexo": "H" },
+          { "Nombre": "Dupuy López Beatriz Carmen", "AREA": "Fortalecimiento", "Calidad Jurídica": "Contrata", "Estamento": "Profesional", "Grado": 9.0, "Profesión": "Administrador Público", "Ingreso Servicio Civil": "2013-12-01", "Antigüedad Servicio Civil": 12.2, "Edad": 49.0, "Sexo": "M" },
+          { "Nombre": "Farías Inostroza Cristóbal Andrés", "AREA": "Fortalecimiento", "Calidad Jurídica": "Contrata", "Estamento": "Profesional", "Grado": 9.0, "Profesión": "Psicólogo", "Ingreso Servicio Civil": "2022-07-25", "Antigüedad Servicio Civil": 3.7, "Edad": 52.3, "Sexo": "H" },
+          { "Nombre": "Triantafilo Torres Daniela Ruth", "AREA": "CAMPUS", "Calidad Jurídica": "Contrata", "Estamento": "Profesional", "Grado": 9.0, "Profesión": "Psicólogo", "Ingreso Servicio Civil": "2016-01-01", "Antigüedad Servicio Civil": 10.1, "Edad": 36.4, "Sexo": "M" },
+          { "Nombre": "Andrades Segura Ingrid Del Carmen", "AREA": "Empleo Público", "Calidad Jurídica": "Contrata", "Estamento": "Técnico", "Grado": 11.0, "Profesión": "Técnico en Administración", "Ingreso Servicio Civil": "2004-09-20", "Antigüedad Servicio Civil": 21.5, "Edad": 67.4, "Sexo": "M" },
+          { "Nombre": "Atenas Igor Isabel Margarita", "AREA": "CAMPUS", "Calidad Jurídica": "Contrata", "Estamento": "Técnico", "Grado": 11.0, "Profesión": "Secretaria Bilingüe", "Ingreso Servicio Civil": "2004-11-09", "Antigüedad Servicio Civil": 21.3, "Edad": 57.8, "Sexo": "M" },
+          { "Nombre": "Prado Contreras Caterina Marlene", "AREA": "Empleo Público", "Calidad Jurídica": "Contrata", "Estamento": "Profesional", "Grado": 11.0, "Profesión": "Psicólogo", "Ingreso Servicio Civil": "2016-07-13", "Antigüedad Servicio Civil": 9.7, "Edad": 53.9, "Sexo": "M" },
+          { "Nombre": "Ureta Silva Romina Alejandra", "AREA": "Empleo Público", "Calidad Jurídica": "Contrata", "Estamento": "Profesional", "Grado": 11.0, "Profesión": "Ingeniero en RRHH", "Ingreso Servicio Civil": "2014-04-01", "Antigüedad Servicio Civil": 11.1, "Edad": 43.9, "Sexo": "M" },
+          { "Nombre": "Díaz Castillo Carlos Rafael", "AREA": "Empleo Público", "Calidad Jurídica": "Contrata", "Estamento": "Profesional", "Grado": 13.0, "Profesión": "Administrador Público", "Ingreso Servicio Civil": "2016-08-08", "Antigüedad Servicio Civil": 9.6, "Edad": 33.6, "Sexo": "H" },
+          { "Nombre": "Curinao Pino José Nibaldo", "AREA": "CAMPUS", "Calidad Jurídica": "Contrata", "Estamento": "Profesional", "Grado": 12.0, "Profesión": "Administrador Público", "Ingreso Servicio Civil": "2025-01-01", "Antigüedad Servicio Civil": 1.1, "Edad": 28.5, "Sexo": "H" },
+          { "Nombre": "Vargas Moreno Javiera Fernanda", "AREA": "Fortalecimiento", "Calidad Jurídica": "Contrata", "Estamento": "Profesional", "Grado": 14.0, "Profesión": "Administrador Público", "Ingreso Servicio Civil": "2024-01-01", "Antigüedad Servicio Civil": 2.1, "Edad": 31.6, "Sexo": "M" },
+          { "Nombre": "Díaz Saldaña Darlyn Marlenne", "AREA": "CAMPUS", "Calidad Jurídica": "Contrata", "Estamento": "Profesional", "Grado": 15.0, "Profesión": "Administrador Público", "Ingreso Servicio Civil": "2025-08-18", "Antigüedad Servicio Civil": 0.6, "Edad": 26.6, "Sexo": "M" },
+          { "Nombre": "Raul Augurto", "AREA": "CAMPUS", "Calidad Jurídica": "Contrata", "Estamento": "Profesional", "Grado": 14.0, "Profesión": "Administrador Público", "Ingreso Servicio Civil": "2026-01-01", "Antigüedad Servicio Civil": 0.1, "Edad": 49.0, "Sexo": "H" },
+          { "Nombre": "Nicole Castro", "AREA": "Empleo Público", "Calidad Jurídica": "Honorarios", "Estamento": "Profesional", "Grado": null, "Profesión": "Diseñadora de Servicios", "Ingreso Servicio Civil": "2024-01-01", "Antigüedad Servicio Civil": 2.1, "Edad": 35.9, "Sexo": "M" },
+          { "Nombre": "Riquelme Velasquez Sandra Catalina", "AREA": "Empleo Público", "Calidad Jurídica": "Contrata", "Estamento": "Profesional", "Grado": 5.0, "Profesión": "Administrador Público", "Ingreso Servicio Civil": "2025-12-01", "Antigüedad Servicio Civil": 0.2, "Edad": 44.4, "Sexo": "M" }
+        ];
+
+        let charts = {};
+
+        function init() {
+            lucide.createIcons();
+            populateFilters();
+            updateDashboard();
+        }
+
+        function populateFilters() {
+            const areas = [...new Set(RAW_DATA.map(d => d.AREA))].sort();
+            const areaSelect = document.getElementById('filterArea');
+            areas.forEach(area => {
+                const opt = document.createElement('option');
+                opt.value = area;
+                opt.textContent = area;
+                areaSelect.appendChild(opt);
+            });
+        }
+
+        function resetFilters() {
+            document.getElementById('filterArea').value = 'All';
+            document.getElementById('searchInput').value = '';
+            updateDashboard();
+        }
+
+        function updateDashboard() {
+            const areaValue = document.getElementById('filterArea').value;
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+
+            const filteredData = RAW_DATA.filter(d => {
+                const matchesArea = (areaValue === 'All' || d.AREA === areaValue);
+                const matchesSearch = d.Nombre.toLowerCase().includes(searchTerm) || 
+                                    (d.Profesión && d.Profesión.toLowerCase().includes(searchTerm));
+                return matchesArea && matchesSearch;
+            });
+
+            renderKPIs(filteredData);
+            renderCharts(filteredData);
+            renderTable(filteredData);
+            document.getElementById('rowCount').textContent = `${filteredData.length} personas registradas`;
+        }
+
+        function renderKPIs(data) {
+            const count = data.length || 0;
+            document.getElementById('kpiTotal').textContent = count;
+            
+            const avgEdad = count ? data.reduce((acc, curr) => acc + (curr.Edad || 0), 0) / count : 0;
+            const validGrados = data.filter(d => d.Grado !== null);
+            const avgGrado = validGrados.length ? validGrados.reduce((acc, curr) => acc + curr.Grado, 0) / validGrados.length : 0;
+            const avgAnt = count ? data.reduce((acc, curr) => acc + (curr["Antigüedad Servicio Civil"] || 0), 0) / count : 0;
+
+            document.getElementById('kpiEdad').textContent = Math.round(avgEdad);
+            document.getElementById('kpiGrado').textContent = avgGrado.toFixed(1);
+            document.getElementById('kpiAntiguedad').textContent = avgAnt.toFixed(1);
+
+            const m = data.filter(d => d.Sexo === 'M').length;
+            const h = data.filter(d => d.Sexo === 'H').length;
+            const pM = count ? Math.round((m / count) * 100) : 0;
+            const pH = count ? Math.round((h / count) * 100) : 0;
+            document.getElementById('genderSummary').textContent = `${pM}% Mujer / ${pH}% Hombre`;
+        }
+
+        function renderCharts(data) {
+            Object.values(charts).forEach(c => c.destroy());
+
+            const primary = '#6366f1'; 
+            const secondary = '#0f172a';
+
+            // GENERO
+            const counts = { 'M': 0, 'H': 0 };
+            data.forEach(d => counts[d.Sexo]++);
+            
+            charts.genero = new Chart(document.getElementById('chartGenero'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Mujer', 'Hombre'],
+                    datasets: [{
+                        data: [counts['M'], counts['H']],
+                        backgroundColor: [primary, secondary],
+                        hoverOffset: 12,
+                        borderWidth: 0
+                    }]
+                },
+                options: { 
+                    maintainAspectRatio: false, cutout: '75%',
+                    plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, font: { size: 11, weight: '700' }, padding: 20 } } } 
+                }
+            });
+
+            // ESTAMENTOS
+            const estCounts = {};
+            data.forEach(d => estCounts[d.Estamento] = (estCounts[d.Estamento] || 0) + 1);
+            const estSorted = Object.entries(estCounts).sort((a,b) => b[1] - a[1]);
+
+            charts.estamento = new Chart(document.getElementById('chartEstamento'), {
+                type: 'bar',
+                data: {
+                    labels: estSorted.map(x => x[0]),
+                    datasets: [{
+                        data: estSorted.map(x => x[1]),
+                        backgroundColor: primary,
+                        borderRadius: 6,
+                        barThickness: 18
+                    }]
+                },
+                options: { 
+                    maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false } },
+                    scales: { x: { display: false }, y: { grid: { display: false }, border: { display: false }, ticks: { font: { size: 11, weight: '600' } } } }
+                }
+            });
+
+            // PROFESIONES (Nombre completo)
+            const pCounts = {};
+            data.forEach(d => { if(d.Profesión) pCounts[d.Profesión] = (pCounts[d.Profesión] || 0) + 1; });
+            const pSorted = Object.entries(pCounts).sort((a,b) => b[1] - a[1]).slice(0, 5);
+
+            charts.profesion = new Chart(document.getElementById('chartProfesion'), {
+                type: 'bar',
+                data: {
+                    labels: pSorted.map(x => x[0]),
+                    datasets: [{
+                        data: pSorted.map(x => x[1]),
+                        backgroundColor: secondary,
+                        borderRadius: 6,
+                        barThickness: 18
+                    }]
+                },
+                options: { 
+                    maintainAspectRatio: false, plugins: { legend: { display: false } },
+                    scales: { y: { display: false }, x: { grid: { display: false }, border: { display: false }, ticks: { font: { size: 10, weight: '700' } } } }
+                }
+            });
+
+            // SCATTER (Matriz con Tooltips extra claros)
+            charts.scatter = new Chart(document.getElementById('chartScatter'), {
+                type: 'bubble',
+                data: {
+                    datasets: [{
+                        label: 'Mujer',
+                        data: data.filter(d => d.Sexo === 'M').map(d => ({ x: d["Antigüedad Servicio Civil"], y: d.Grado, r: (d.Edad || 40)/4, n: d.Nombre, p: d.Profesión })),
+                        backgroundColor: 'rgba(99, 102, 241, 0.5)',
+                        borderColor: '#6366f1',
+                        borderWidth: 1
+                    }, {
+                        label: 'Hombre',
+                        data: data.filter(d => d.Sexo === 'H').map(d => ({ x: d["Antigüedad Servicio Civil"], y: d.Grado, r: (d.Edad || 40)/4, n: d.Nombre, p: d.Profesión })),
+                        backgroundColor: 'rgba(15, 23, 42, 0.5)',
+                        borderColor: '#0f172a',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: { 
+                                title: (items) => items[0].raw.n,
+                                label: (c) => [
+                                    `Profesión: ${c.raw.p}`,
+                                    `Seniority: ${c.raw.x} años SC`,
+                                    `Grado: ${c.raw.y || 'S/G'}`
+                                ]
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { title: { display: true, text: 'AÑOS DE PERMANENCIA', font: { size: 10, weight: '800' }, color: '#94a3b8' }, grid: { color: '#f8fafc' } },
+                        y: { title: { display: true, text: 'GRADO JERÁRQUICO', font: { size: 10, weight: '800' }, color: '#94a3b8' }, reverse: true, min: 1, max: 16, grid: { color: '#f8fafc' } }
+                    }
+                }
+            });
+        }
+
+        function renderTable(data) {
+            const tbody = document.getElementById('dataTableBody');
+            tbody.innerHTML = '';
+            data.sort((a,b) => (a.Grado || 99) - (b.Grado || 99)).forEach(d => {
+                const row = `
+                    <tr class="hover:bg-slate-50/50 transition-colors group">
+                        <td class="px-8 py-5">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-[9px] font-black text-slate-300 group-hover:bg-indigo-50 group-hover:text-indigo-400 transition-colors">
+                                    ${d.Nombre.split(' ').map(n => n[0]).join('').substring(0,2)}
+                                </div>
+                                <span class="font-semibold text-slate-700">${d.Nombre}</span>
+                            </div>
+                        </td>
+                        <td class="px-6 py-5 text-xs text-slate-500 font-medium">${d.AREA}</td>
+                        <td class="px-6 py-5 text-[9px] font-black uppercase tracking-widest text-slate-400">${d["Calidad Jurídica"]}</td>
+                        <td class="px-6 py-5 text-center text-xs font-bold text-slate-800">${d.Grado || 'H'}</td>
+                        <td class="px-6 py-5 text-xs text-slate-500">${d.Profesión || '-'}</td>
+                        <td class="px-8 py-5 text-center font-bold text-slate-400 group-hover:text-indigo-600 transition-colors">${d["Antigüedad Servicio Civil"] || 0}</td>
+                    </tr>`;
+                tbody.innerHTML += row;
+            });
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>
