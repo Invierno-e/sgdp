@@ -108,7 +108,7 @@
             <div class="card lg:col-span-3">
                 <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-10">
                     <div>
-                        <h3 class="text-xs uppercase font-black tracking-widest text-slate-400">Matriz de Seniority y Grado</h3>
+                        <h3 class="text-xs uppercase font-black tracking-widest text-slate-400">Matriz de antiguedad SC y Grado</h3>
                         <p class="text-sm text-slate-500 mt-1">Pasa el cursor sobre los círculos para ver información detallada (fuente aumentada para legibilidad).</p>
                     </div>
                     <div class="flex items-center gap-6 text-[10px] font-bold uppercase tracking-wider text-slate-400">
@@ -365,7 +365,7 @@
                                 title: (items) => items[0].raw.n,
                                 label: (c) => [
                                     `Profesión: ${c.raw.p}`,
-                                    `Seniority: ${c.raw.x} años SC`,
+                                    `Antiguedad SC: ${c.raw.x} años SC`,
                                     `Grado: ${c.raw.y || 'S/G'}`
                                 ]
                             }
@@ -406,4 +406,5 @@
         window.onload = init;
     </script>
 </body>
+
 </html>
